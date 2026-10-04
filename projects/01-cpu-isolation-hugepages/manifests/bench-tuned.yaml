@@ -1,0 +1,45 @@
+# Tuned: Guaranteed QoS with integer CPUs, so the static CPU manager gives the
+# container exclusive cores (the noise pod is moved off them), plus 2 MiB huge
+# pages for memlat's hugepages run.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bench-tuned
+  namespace: latency-bench
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        billy-kube/pool: latency
+      tolerations:
+        - key: billy-kube/latency
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
+      containers:
+        - name: bench
+          image: billy-kube/bench:dev
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: VARIANT
+              value: tuned
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: HUGEPAGES
+              value: "1"
+          securityContext:
+            capabilities:
+              add: ["SYS_NICE", "IPC_LOCK"]
+          resources:
+            requests:
+              cpu: "2"
+              memory: 1Gi
+              hugepages-2Mi: 512Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi
+              hugepages-2Mi: 512Mi
