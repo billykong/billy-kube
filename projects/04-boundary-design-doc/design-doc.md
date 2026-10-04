@@ -2,6 +2,8 @@
 
 Toy trading-adjacent workload: argue what stays on Kubernetes and what needs bare-metal / kernel-bypass.
 
+Requirements and status: [docs/prd/projects/p04-boundary-design-doc.md](../../docs/prd/projects/p04-boundary-design-doc.md).
+
 ## Workload
 
 TODO

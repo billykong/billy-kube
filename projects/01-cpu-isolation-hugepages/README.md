@@ -2,6 +2,8 @@
 
 Benchmark a latency-sensitive workload on kind with and without CPU pinning, huge pages and dedicated tainted nodes.
 
+Requirements and status: [docs/prd/projects/p01-cpu-isolation-hugepages.md](../../docs/prd/projects/p01-cpu-isolation-hugepages.md).
+
 ## Hypothesis
 
 On a node shared with a noisy neighbour:

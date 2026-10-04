@@ -1,6 +1,6 @@
 # billy-kube
 
-Hands-on Kubernetes / low-latency infra learning track, run on a local cluster (kind, optionally k3s) so the plumbing stays visible. The plan lives in `billy-notes/kubernetes/low-latency-infra-learning-track.md`.
+Hands-on Kubernetes / low-latency infra learning track, run on a local cluster (kind, optionally k3s) so the plumbing stays visible. The high-level plan lives in `billy-notes/kubernetes/low-latency-infra-learning-track.md`; the concrete requirements, priorities and status are in the PRD at [docs/prd/](docs/prd/README.md).
 
 ## Layout
 
@@ -13,6 +13,7 @@ Hands-on Kubernetes / low-latency infra learning track, run on a local cluster (
 | `projects/03-cilium-ebpf-vs-default-cni/` | Cilium/eBPF vs default CNI latency comparison |
 | `projects/04-boundary-design-doc/` | Design doc: what stays on K8s vs bare-metal/kernel-bypass |
 | `scripts/` | Shared helpers (bench runners, result collectors) |
+| `docs/prd/` | Product requirements: goals, functional and non-functional requirements, roadmap |
 | `docs/` | Lab logs and short notes; reusable ones go to billy-notes |
 
 ## Conventions
