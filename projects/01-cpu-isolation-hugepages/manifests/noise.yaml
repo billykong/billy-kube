@@ -1,0 +1,35 @@
+# Noisy neighbour on the latency node: CPU, memory-bandwidth and cache
+# pressure. Burstable QoS, so the static CPU manager confines it to the shared
+# pool and it can never run on CPUs handed out exclusively to Guaranteed pods.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: noise
+  namespace: latency-bench
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: noise
+  template:
+    metadata:
+      labels:
+        app: noise
+    spec:
+      nodeSelector:
+        billy-kube/pool: latency
+      tolerations:
+        - key: billy-kube/latency
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
+      containers:
+        - name: stress
+          image: billy-kube/bench:dev
+          imagePullPolicy: IfNotPresent
+          command: ["stress-ng"]
+          args: ["--cpu", "0", "--cpu-method", "matrixprod", "--vm", "1", "--vm-bytes", "256M", "--cache", "1", "--timeout", "0"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
