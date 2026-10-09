@@ -28,7 +28,7 @@ This track runs after the agentic-systems track's projects 1-4 (see billy-notes 
 ### P01: CPU isolation + huge pages + taints/tolerations
 1. **Done.** Tuned kind config, bench image (cyclictest, memlat, stress-ng), noise Deployment, baseline and tuned Jobs, runner and `make` targets. Entrypoint and memlat smoke-tested outside a cluster.
 2. **Next.** Validate on WSL2: cluster comes up, `make check-latency-node` shows the static policy, taint and allocatable huge pages; both variants complete; tuned pod gets exclusive CPUs and the noise pod's cpuset excludes them.
-3. Harness hardening: environment record (LAB-13), tuning assertions (LAB-15), summariser (LAB-14), `make lint` (NFR-40).
+3. **Done.** Harness hardening: environment record (LAB-13), tuning checks that discard bad runs (LAB-15), summariser (LAB-14), `make lint` / `make test` and CI (NFR-40, NFR-41). Cluster-dependent parts are tested against a stub `kubectl` until milestone 2.
 4. Bare-metal runs: host tuning (`isolcpus`, `nohz_full`, `irqaffinity`, performance governor, SMT/turbo) documented with revert; 3+ runs per variant, with and without host tuning.
 5. Writeup: results table, takeaways, blog post.
 

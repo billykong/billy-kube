@@ -1,0 +1,23 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: projects/01-cpu-isolation-hugepages/bench/memlat/go.mod
+          cache: false
+      - name: Install shellcheck
+        run: command -v shellcheck || (sudo apt-get update && sudo apt-get install -y shellcheck)
+      - run: make lint
+      - run: make test

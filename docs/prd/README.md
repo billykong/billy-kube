@@ -25,7 +25,7 @@ Functional requirements are in [02-lab-architecture.md](02-lab-architecture.md) 
 | Project | Status |
 | --- | --- |
 | LF Linux fundamentals | Not started (memlat from P01 is reusable for huge pages) |
-| P01 CPU isolation + huge pages | Milestone 1 (build) done; not yet run on a cluster. Next: validate on WSL2 |
+| P01 CPU isolation + huge pages | Milestones 1 (build) and 3 (harness hardening) done; not yet run on a cluster. Next: milestone 2, validate on WSL2 |
 | P02 SR-IOV + Multus | Not started; waits on the NIC check |
 | P03 Cilium vs default CNI | Not started |
 | P04 Boundary design doc | Not started; needs evidence from P01 and P03 |
