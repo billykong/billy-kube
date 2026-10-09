@@ -16,13 +16,13 @@ These apply to every project and to the shared lab. A project file may tighten t
 
 | ID | Requirement | Priority | Status |
 | --- | --- | --- | --- |
-| NFR-10 | Every result records its environment: host name, environment type (WSL2 / bare metal), kernel version, CPU model and count, SMT and governor state, kind and Kubernetes versions, CNI, variant, git commit and UTC timestamp. | Must | Planned (LAB-13) |
-| NFR-11 | Each variant is run at least 3 times; published figures are medians with the min-max spread. | Must | Planned |
+| NFR-10 | Every result records its environment: host name, environment type (WSL2 / bare metal), kernel version, CPU model and count, SMT and governor state, kind and Kubernetes versions, CNI, variant, git commit and UTC timestamp. | Must | **Partial**: `scripts/env-record.sh` (LAB-13); not yet run against a cluster |
+| NFR-11 | Each variant is run at least 3 times; published figures are medians with the min-max spread. | Must | **Partial**: `make summarise` reports medians with spread and flags groups with fewer than 3 runs; runs pending |
 | NFR-12 | Latency is reported as p50, p99, p99.9 and max, plus sample count. Averages alone are never published. | Must | **Done**: `bench/bench.sh` output format (P01) |
 | NFR-13 | A comparison changes one variable at a time; everything else (node, kernel, image, duration, noise) is held constant and stated. | Must | **Partial**: P01 variants differ only in QoS and huge pages; not yet run |
-| NFR-14 | Each run includes a check that the tuning applied (cpuset, CPU manager state, huge page usage, active datapath). A run where the check fails is discarded, not published. | Must | **Partial**: P01 records allowed CPUs per run; automated assertion pending (LAB-15) |
-| NFR-15 | Numbers from WSL2 are labelled as non-authoritative and are never compared directly with bare-metal numbers. | Must | **Done**: stated in the P01 README caveats |
-| NFR-16 | Raw tool output is kept in `results/`; summaries are generated from it by script. | Must | **Partial**: raw output kept by `bench/run.sh`; summariser pending (LAB-14) |
+| NFR-14 | Each run includes a check that the tuning applied (cpuset, CPU manager state, huge page usage, active datapath). A run where the check fails is discarded, not published. | Must | **Partial**: `bench/run.sh` discards a run when `bench/check-tuning.sh` fails (P01); tested with a stub `kubectl`, not yet on a cluster |
+| NFR-15 | Numbers from WSL2 are labelled as non-authoritative and are never compared directly with bare-metal numbers. | Must | **Done**: P01 README caveats; `make summarise` keeps environments in separate tables and labels WSL2 ones |
+| NFR-16 | Raw tool output is kept in `results/`; summaries are generated from it by script. | Must | **Done**: `bench/run.sh` keeps raw output; `make summarise` generates the tables |
 | NFR-17 | The noise source in a "noisy neighbour" comparison is defined in a manifest and identical across variants. | Must | **Partial**: `manifests/noise.yaml` (P01) |
 
 ## Portability
@@ -45,9 +45,9 @@ These apply to every project and to the shared lab. A project file may tighten t
 
 | ID | Requirement | Priority | Status |
 | --- | --- | --- | --- |
-| NFR-40 | `make lint` runs shellcheck on scripts, kubeconform (strict) on manifests, and `gofmt` + `go vet` on Go code. | Must | **Partial**: all pass on P01 when run by hand; `make lint` target pending |
-| NFR-41 | CI runs `make lint` and Go unit tests on every pull request. | Should | Planned |
-| NFR-42 | Code stays small and readable: plain manifests, POSIX/bash scripts, Go standard library. A new dependency needs a stated reason in the project README. | Should | **Done**: P01 memlat is stdlib-only |
+| NFR-40 | `make lint` runs shellcheck on scripts, kubeconform (strict) on manifests, and `gofmt` + `go vet` on Go code. | Must | **Done**: `make lint` |
+| NFR-41 | CI runs `make lint` and Go unit tests on every pull request. | Should | **Done**: `.github/workflows/ci.yml` runs `make lint` and `make test`; green on billykong/billy-kube#3 |
+| NFR-42 | Code stays small and readable: plain manifests, bash scripts, Go or Python standard library. A new dependency needs a stated reason in the project README. | Should | **Done**: memlat (Go) and `scripts/summarise.py` (Python) use only their standard libraries |
 | NFR-43 | This PRD is updated in the same commit as a change that alters a requirement's status. | Must | Ongoing |
 
 ## Security and safety

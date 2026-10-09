@@ -89,8 +89,8 @@ These apply to every project. Project-specific functional requirements are in th
 | ID | Requirement | Priority | Status |
 | --- | --- | --- | --- |
 | LAB-10 | Benchmark images are built locally (`make bench-image`) and loaded into kind (`make bench-load`); no registry needed. | Must | **Partial**: Dockerfile and targets exist; image build not yet verified end to end |
-| LAB-11 | A runner applies one variant, waits for completion with a timeout, and saves logs to `results/<variant>-<UTC timestamp>.txt`. | Must | **Partial**: `bench/run.sh` (P01); not yet run on a cluster |
+| LAB-11 | A runner applies one variant, waits for completion with a timeout, and saves logs to `results/<variant>-<UTC timestamp>.txt`. | Must | **Partial**: `bench/run.sh` (P01), exercised against a stub `kubectl` (pass and discard paths); not yet run on a cluster |
 | LAB-12 | Benchmark tools print one `key=value` line per measurement, so results can be parsed without screen-scraping. | Must | **Done**: `bench/bench.sh` smoke run, output in the P01 README |
-| LAB-13 | Each result file starts with an environment record (see NFR-10). | Must | Planned |
-| LAB-14 | A summariser turns a set of result files into a Markdown table of medians and spread per variant (`make summarise`). | Should | Planned |
-| LAB-15 | Benchmark runs fail loudly when the tuning they depend on is absent (e.g. a "tuned" pod that didn't get exclusive CPUs), instead of recording a misleading result. | Should | Planned |
+| LAB-13 | Each result file starts with an environment record (see NFR-10). | Must | **Partial**: `scripts/env-record.sh`, written first in every result by `bench/run.sh`; cluster fields not yet seen on a real cluster |
+| LAB-14 | A summariser turns a set of result files into a Markdown table of medians and spread per variant (`make summarise`). | Should | **Done**: `make summarise`; tested by `make test` (`scripts/summarise_test.py`) |
+| LAB-15 | Benchmark runs fail loudly when the tuning they depend on is absent (e.g. a "tuned" pod that didn't get exclusive CPUs), instead of recording a misleading result. | Should | **Partial**: `bench/check-tuning.sh`, tested by `make test` against a stub `kubectl` (7 cases); not yet run on a cluster |

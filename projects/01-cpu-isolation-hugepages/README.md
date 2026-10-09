@@ -48,16 +48,29 @@ make check-latency-node      # taint, allocatable hugepages-2Mi, cpu_manager_sta
 make bench-load              # builds billy-kube/bench:dev and loads it into kind
 make bench-baseline          # writes results/baseline-<timestamp>.txt
 make bench-tuned             # writes results/tuned-<timestamp>.txt
+make summarise               # median (min-max) table per environment and variant
 make cluster-down hugepages-off
 ```
 
-Run each variant at least 3 times and compare medians: single runs on a laptop are noisy.
+Run each variant at least 3 times and compare medians: single runs on a laptop are noisy. `make summarise` flags any group with fewer than 3 runs.
 
-Things to check while it runs:
+### What a run checks and records
 
-- The tuned pod's `cpus=` line is two CPUs, not CPU 0. The baseline pod's line is the whole shared pool.
-- `kubectl -n latency-bench exec deploy/noise -- grep Cpus_allowed_list /proc/self/status` while `bench-tuned` runs: the noise pod's cpuset should exclude the tuned pod's CPUs.
-- `kubectl run probe --image=busybox -- sleep 3600` lands on `worker`, never `worker2` (taint).
+`bench/run.sh` writes a result file only if every step passes, so `results/` never holds a run whose tuning didn't apply:
+
+1. `scripts/env-record.sh` writes an `env` line: host, WSL2 or bare metal, kernel, CPU model and count, SMT, governor, turbo, host huge pages, kind and Kubernetes versions, CNI, git commit (and whether the tree was dirty) and a UTC timestamp.
+2. While the Job runs, `bench/check-tuning.sh` reads the latency node's kubelet config (`node` line: CPU manager and topology manager policies, reserved CPUs) and compares the bench pod's cpuset with the noise pod's (`check` line):
+   - `tuned` must have exactly its CPU limit in CPUs, none shared with the noise pod, on a node with the static policy. The kubelet moves shared-pool pods off newly exclusive CPUs on its reconcile loop (10s by default), so the check retries for up to 30s.
+   - `baseline` must share CPUs with the noise pod, which proves the baseline really is noisy.
+3. The Job must succeed. `memlat -hugepages` exits non-zero if the huge pages aren't there, which fails the Job.
+
+The check only uses `kubectl` (pod cpusets and the kubelet's `configz` endpoint), so it works the same on kind and k3s.
+
+Also check by hand once per cluster: `kubectl run probe --image=busybox -- sleep 3600` lands on `worker`, never `worker2` (taint).
+
+### Tests
+
+`make lint` (shellcheck, kubeconform, gofmt, go vet) and `make test` (memlat Go tests, `bench/*_test.sh` against a stub `kubectl`, summariser tests) run without a cluster, and in CI on every pull request.
 
 ## Caveats
 
