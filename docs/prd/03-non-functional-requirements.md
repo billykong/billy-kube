@@ -46,7 +46,7 @@ These apply to every project and to the shared lab. A project file may tighten t
 | ID | Requirement | Priority | Status |
 | --- | --- | --- | --- |
 | NFR-40 | `make lint` runs shellcheck on scripts, kubeconform (strict) on manifests, and `gofmt` + `go vet` on Go code. | Must | **Done**: `make lint` |
-| NFR-41 | CI runs `make lint` and Go unit tests on every pull request. | Should | **Partial**: `.github/workflows/ci.yml` runs `make lint` and `make test`; first green run pending |
+| NFR-41 | CI runs `make lint` and Go unit tests on every pull request. | Should | **Done**: `.github/workflows/ci.yml` runs `make lint` and `make test`; green on billykong/billy-kube#3 |
 | NFR-42 | Code stays small and readable: plain manifests, bash scripts, Go or Python standard library. A new dependency needs a stated reason in the project README. | Should | **Done**: memlat (Go) and `scripts/summarise.py` (Python) use only their standard libraries |
 | NFR-43 | This PRD is updated in the same commit as a change that alters a requirement's status. | Must | Ongoing |
 
