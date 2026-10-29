@@ -21,7 +21,8 @@ fi
 # shellcheck disable=SC2016 # $2 is awk's, not ours
 hugepages=$(first awk '/^HugePages_Total:/ {print $2}' /proc/meminfo)
 commit=$(first git rev-parse --short HEAD)
-if [ -n "$(git status --porcelain 2>/dev/null)" ]; then dirty=1; else dirty=0; fi
+# Saved results are untracked output, not code changes, so they do not count.
+if [ -n "$(git status --porcelain -- . ':(exclude,glob)projects/*/results/**' 2>/dev/null)" ]; then dirty=1; else dirty=0; fi
 kind_version=$(first sh -c "kind version | awk '{print \$2}'")
 context=$(first kubectl config current-context)
 k8s=$(first kubectl get nodes -o jsonpath='{.items[0].status.nodeInfo.kubeletVersion}')

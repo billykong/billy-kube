@@ -77,18 +77,32 @@ Also check by hand once per cluster: `kubectl run probe --image=busybox -- sleep
 - **kind nodes share the host kernel and CPUs.** The static CPU manager only isolates within `worker2`: anything on `worker`, the control plane, or the host can still run on the "exclusive" CPUs. Real isolation needs `isolcpus`/`nohz_full`/`irqaffinity` boot parameters on bare metal, with the kubelet's reserved CPUs matching the housekeeping set.
 - **Huge pages are a host resource.** Every kind node reports the same host huge page pool as capacity, so the kubelets can over-commit it between them.
 - **WSL2**: pinning is to vCPUs and Windows scheduling noise leaks in. Use WSL2 to validate the manifests; use bare-metal Linux for the numbers (see `billy-notes/kubernetes/wsl2-vs-bare-metal-for-learning-track.md`).
-- Bare-metal extras for the real runs: `performance` CPU governor, SMT and turbo off (or the `full-pcpus-only` CPU manager policy option), IRQs steered off the benchmark CPUs.
+- Bare-metal extras for the real runs: `performance` CPU governor, C-state limits, SMT and turbo off (or the `full-pcpus-only` CPU manager policy option), IRQs steered off the benchmark CPUs.
+- **C-states.** Without host tuning, an exclusive CPU with nothing else on it goes idle between cyclictest wake-ups and drops into deep C-states, so pinning can make the wake-up tail *worse* (see Results). cyclictest normally prevents this by holding `/dev/cpu_dma_latency` at 0, but the device isn't in the container (`WARN: stat /dev/cpu_dma_latency failed`).
+- **The baseline runs on CPU 0**, the kubelet's reserved CPU: cyclictest pins to the first allowed CPU, and the shared pool includes the reserved set.
+- **Huge pages after a reboot.** The host reservation is not persistent. After a reboot, run `make hugepages-on`, then `docker exec billy-kube-worker2 systemctl restart kubelet` so the node reports them again.
 
 ## Results
 
-Not run on a cluster yet. A smoke run of `bench.sh` directly on a 4-vCPU cloud VM (no cluster, no noise, 128 MiB buffer) showed the hugepages effect:
+### Milestone 2: validation on a bare-metal laptop, no host tuning
 
-```
-memlat hugepages=false size_mb=128 cpus=2-3 ... p50_ns=165.6 p99_ns=397.1
-memlat hugepages=true  size_mb=128 cpus=2-3 ... p50_ns=120.0 p99_ns=320.9
-```
+2026-10-29, `billykong-x1`: i7-1165G7 (4 cores / 8 threads, one NUMA node), kernel 6.8.0-138-generic, `powersave` governor, turbo on, SMT on; kind v0.27.0, Kubernetes v1.32.2, kindnet. Commit `aa3e5e6`, clean tree. Every run passed its tuning check: tuned got CPUs `1,5` (both threads of one core) with the noise pod moved off them; baseline shared CPUs with the noise pod. Median (min-max) of 3 runs, from `make summarise` over `results/`:
 
-TODO: baseline vs tuned on WSL2 (manifest validation), then on bare metal.
+| Variant | Tool | Mode | p50 | p99 | p99.9 | max |
+| --- | --- | --- | --- | --- | --- | --- |
+| baseline | cyclictest | SCHED_OTHER | 58 µs | 64 (63-68) µs | 94 (93-1645) µs | 5161 (4753-8408) µs |
+| tuned | cyclictest | SCHED_OTHER | 55 µs | 164 (142-220) µs | 1522 (981-1688) µs | 6425 (3872-6660) µs |
+| baseline | memlat | 4 KiB pages, 256 MiB | 173 (173-173) ns | 281 (269-289) ns | 579 (448-620) ns | 22755 (12228-23689) ns |
+| tuned | memlat | 4 KiB pages, 256 MiB | 151 (146-151) ns | 209 (206-218) ns | 405 (377-440) ns | 19776 (13400-21164) ns |
+| tuned | memlat | 2 MiB pages, 256 MiB | 126 (122-127) ns | 174 (172-178) ns | 340 (320-341) ns | 19743 (15813-31621) ns |
+
+- **Huge pages (hypothesis 2) hold.** On the same pinned CPUs, 2 MiB pages cut memlat p50 by 17% and p99 by 17% against 4 KiB pages.
+- **Pinning (hypothesis 1) does not hold without host tuning.** Tuned p99 is about 2.5× the baseline's, and its p99.9 is about 16× higher. The per-CPU idle counters explain it. In an earlier 60 s tuned run, the bench's CPU 1 entered C1 298,251 times, C2 2,891 times and C3 523 times. CPU 0, shared with stress-ng, entered C2 and C3 12 times each. Exit latencies on this CPU are 253 µs for C2 and 1048 µs for C3, which matches the tuned p99 and p99.9. The busy neighbour keeps the baseline's core awake. Commands and numbers: `billy-notes/kubernetes/c-states-defeat-cpu-pinning.md`.
+- **One baseline outlier.** The second baseline run (`baseline-20261029T103252Z`, p99.9 1645 µs) started right after a tuned run, before the kubelet had put CPUs `1,5` back in the shared pool (its check line shows `noise_cpus=0,2-4,6-7`). It is kept, since its check passed, but it inflates the baseline p99.9 range.
+
+The cyclictest histogram goes to 20 ms (`HIST_MAX_US`), so none of these runs overflowed.
+
+Next (M4): the same runs with host tuning (performance governor, C-state limits, `isolcpus`/`nohz_full`/`irqaffinity`), to see whether pinning beats the baseline once the core can't sleep.
 
 ## Takeaways
 
