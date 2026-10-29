@@ -23,6 +23,9 @@ hugepages=$(first awk '/^HugePages_Total:/ {print $2}' /proc/meminfo)
 commit=$(first git rev-parse --short HEAD)
 # Saved results are untracked output, not code changes, so they do not count.
 if [ -n "$(git status --porcelain -- . ':(exclude,glob)projects/*/results/**' 2>/dev/null)" ]; then dirty=1; else dirty=0; fi
+# host_tuning, cstate_max_us, boot isolation params and IRQ placement; governor
+# and turbo are already recorded above.
+host_tuning=$(first sh -c "'$(dirname "$0")/host-tuning.sh' status | sed 's/ governor=[^ ]*//; s/ turbo=[^ ]*//'")
 kind_version=$(first sh -c "kind version | awk '{print \$2}'")
 context=$(first kubectl config current-context)
 k8s=$(first kubectl get nodes -o jsonpath='{.items[0].status.nodeInfo.kubeletVersion}')
@@ -38,4 +41,5 @@ esac
 echo "env date_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ) variant=$variant git_commit=$commit git_dirty=$dirty" \
   "host=$(q "$(hostname)") env_type=$env_type kernel=$(uname -r) node_kernel=$(q "$node_kernel")" \
   "cpu_model=$(q "$cpu_model") cpus=$(nproc) smt=$smt governor=$governor turbo=$turbo" \
-  "host_hugepages_2m=$hugepages kind=$kind_version context=$(q "$context") k8s=$k8s cni=$cni"
+  "host_hugepages_2m=$hugepages kind=$kind_version context=$(q "$context") k8s=$k8s cni=$cni" \
+  "$host_tuning"

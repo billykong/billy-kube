@@ -71,6 +71,20 @@ class RenderTest(unittest.TestCase):
         self.assertIn("| tuned | cyclictest | SCHED_OTHER | 1* | 10 µs | 30 µs |", bm)
         self.assertIn("| tuned | cyclictest | SCHED_OTHER | 1* | 10 µs | 300 µs |", wsl)
 
+    def test_host_tuning_stages_never_mixed(self):
+        runtime = ENV_BM.replace("cni=kindnet", "cni=kindnet host_tuning=runtime cstate_max_us=1")
+        runs = self.write({
+            "a.txt": run(ENV_BM, "tuned", 300, 150),
+            "b.txt": run(runtime, "tuned", 30, 150),
+        })
+        out = summarise.render(runs)
+        self.assertIn("### bare-metal: lab, host tuning: unrecorded", out)
+        self.assertIn("### bare-metal: lab, host tuning: runtime", out)
+        tuned, unrecorded = out.split("### bare-metal: lab, host tuning: unrecorded")
+        self.assertIn("| tuned | cyclictest | SCHED_OTHER | 1* | 10 µs | 300 µs |", unrecorded)
+        self.assertIn("cstate_max_us=1", tuned)
+        self.assertIn("| tuned | cyclictest | SCHED_OTHER | 1* | 10 µs | 30 µs |", tuned)
+
     def test_no_flag_when_enough_runs(self):
         runs = self.write({"r%d.txt" % i: run(ENV_BM, "tuned", 30, 150) for i in range(3)})
         self.assertNotIn("fewer than", summarise.render(runs))

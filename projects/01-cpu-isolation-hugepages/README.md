@@ -20,14 +20,14 @@ On a node shared with a noisy neighbour:
 | --- | --- | --- |
 | `billy-kube-control-plane` | default | control plane |
 | `billy-kube-worker` | default (CPU manager `none`) | general workloads |
-| `billy-kube-worker2` | `cpu-manager-policy=static`, `reserved-cpus=0`, `topology-manager-policy=best-effort`; label `billy-kube/pool=latency`; taint `billy-kube/latency=true:NoSchedule` | latency node |
+| `billy-kube-worker2` | `cpu-manager-policy=static`, `reserved-cpus=0,4` (from M4; `0` in M2), `topology-manager-policy=best-effort`; label `billy-kube/pool=latency`; taint `billy-kube/latency=true:NoSchedule` | latency node |
 
 Both benchmark variants and the noise pod run on `worker2`, so the only differences between them are the QoS class (and therefore the cpuset) and huge pages.
 
 | | `bench-baseline` | `bench-tuned` |
 | --- | --- | --- |
 | QoS | Burstable (`cpu: 2` request, no limit) | Guaranteed (`cpu: 2` request = limit) |
-| CPUs | Shared pool, alongside `noise` and the reserved CPU | 2 exclusive CPUs |
+| CPUs | Shared pool, alongside `noise` and the reserved CPUs | 2 exclusive CPUs |
 | Huge pages | none | `hugepages-2Mi: 512Mi` |
 
 The bench image (`bench/Dockerfile`) contains:
