@@ -1,0 +1,8 @@
+env date_utc=2026-10-29T10:30:10Z variant=tuned git_commit=aa3e5e6 git_dirty=0 host=billykong-x1 env_type=bare-metal kernel=6.8.0-138-generic node_kernel=6.8.0-138-generic cpu_model="11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz" cpus=8 smt=1 governor=powersave turbo=1 host_hugepages_2m=512 kind=v0.27.0 context=kind-billy-kube k8s=v1.32.2 cni=kindnet
+node name=billy-kube-worker2 cpu_manager_policy=static topology_manager_policy=best-effort reserved_cpus=0
+check expect=exclusive requested_cpus=2 bench_cpus=1,5 noise_cpus=0,2-4,6-7 result=pass
+bench variant=tuned node=billy-kube-worker2 cpus=1,5 pinned_cpu=1
+WARN: stat /dev/cpu_dma_latency failed: No such file or directory
+cyclictest rt_priority=0 samples=292352 p50_us=55 p99_us=164 p999_us=1522 max_us=6660 overflows=0
+memlat hugepages=false size_mb=256 cpus=1,5 samples=250778 p50_ns=150.8 p99_ns=205.9 p999_ns=376.7 max_ns=13399.6
+memlat hugepages=true size_mb=256 cpus=1,5 samples=297215 p50_ns=126.8 p99_ns=178.0 p999_ns=340.8 max_ns=15813.1
