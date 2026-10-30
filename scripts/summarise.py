@@ -111,7 +111,7 @@ def render(runs, min_runs=3):
         out.append(title)
         out.append("")
         details = ["%s=%s" % (k, env[k]) for k in ("cpu_model", "kernel", "k8s", "cni", "smt", "governor", "turbo",
-                                                    "cstate_max_us", "nohz_full", "irqs_on_isolated") if k in env]
+                                                    "cstate_max_us", "isolcpus", "nohz_full", "isolated_cpus", "irqs_on_isolated") if k in env]
         if details:
             out.append(", ".join(details))
             out.append("")

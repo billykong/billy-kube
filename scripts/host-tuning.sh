@@ -3,11 +3,16 @@
 #
 #   runtime  performance governor, turbo off, C-states deeper than
 #            MAX_CSTATE_US disabled on every CPU. Lasts until reboot.
-#   boot     nohz_full, rcu_nocbs, irqaffinity and isolcpus=managed_irq on the
-#            kernel command line, via a GRUB drop-in. Needs a reboot.
+#   boot     isolcpus=domain,managed_irq, nohz_full and rcu_nocbs for ISOLATED,
+#            irqaffinity=HOUSEKEEPING, on the kernel command line via a GRUB
+#            drop-in. Needs a reboot.
 #
 # HOUSEKEEPING must match the kubelet's reserved CPUs in
-# cluster/kind/isolated-cpu.yaml; every other CPU is isolated.
+# cluster/kind/isolated-cpu.yaml. ISOLATED is the core the static CPU manager
+# hands the tuned pod (the lowest free core, so 1,5 on a 4-core SMT host).
+# Only that core is isolated: with isolcpus=domain the scheduler stops
+# balancing tasks onto it, so host processes stay off it, but shared-pool pods
+# placed on an isolated CPU would be stuck there too.
 #
 # Usage (apply-* and revert-* need root):
 #   scripts/host-tuning.sh status          one "host_tuning=..." key=value line
@@ -16,6 +21,7 @@
 set -euo pipefail
 
 HOUSEKEEPING=${HOUSEKEEPING:-0,4}
+ISOLATED=${ISOLATED:-1,5}
 MAX_CSTATE_US=${MAX_CSTATE_US:-1}
 # Overridable so the test can point them at a fake tree.
 CPU_SYS=${CPU_SYS:-/sys/devices/system/cpu}
@@ -40,24 +46,8 @@ expand() {
   echo "${out[@]}"
 }
 
-# The isolated set: every online CPU not in HOUSEKEEPING, as a list like "1-3,5-7".
-isolated() {
-  local hk c n out=() start="" prev=""
-  hk=" $(expand "$HOUSEKEEPING") "
-  for c in $(cpus); do
-    n=${c##*cpu}
-    [[ $hk == *" $n "* ]] && continue
-    if [ -n "$prev" ] && [ "$n" -eq $((prev + 1)) ]; then prev=$n; continue; fi
-    [ -n "$start" ] && out+=("$start$([ "$prev" != "$start" ] && echo "-$prev")")
-    start=$n; prev=$n
-  done
-  [ -n "$start" ] && out+=("$start$([ "$prev" != "$start" ] && echo "-$prev")")
-  local IFS=,; echo "${out[*]}"
-}
-
 boot_params() {
-  local iso; iso=$(isolated)
-  echo "nohz_full=$iso rcu_nocbs=$iso irqaffinity=$HOUSEKEEPING isolcpus=managed_irq,$iso"
+  echo "isolcpus=domain,managed_irq,$ISOLATED nohz_full=$ISOLATED rcu_nocbs=$ISOLATED irqaffinity=$HOUSEKEEPING"
 }
 
 param() { local v; v=$(grep -o "\b$1=[^ ]*" "$CMDLINE" | head -n1 | cut -d= -f2-) || true; echo "${v:-none}"; }
@@ -74,14 +64,15 @@ status() {
   [ "$governors" = performance ] && [ "$turbo" = 0 ] && [ "$deepest" -le "$MAX_CSTATE_US" ] || runtime=0
   [ "$(param nohz_full)" != none ] && boot=1
   case $runtime$boot in 00) label=none ;; 10) label=runtime ;; 01) label=boot ;; 11) label="runtime+boot" ;; esac
-  # IRQs whose effective affinity reaches an isolated CPU.
-  iso=" $(expand "$(isolated)") "
+  # IRQs whose effective affinity reaches an ISOLATED CPU.
+  iso=" $(expand "$ISOLATED") "
   for f in "$IRQ_DIR"/*/effective_affinity_list; do
     [ -r "$f" ] || continue
     for c in $(expand "$(cat "$f")"); do [[ $iso == *" $c "* ]] && { irqs=$((irqs + 1)); break; }; done
   done
   echo "host_tuning=$label governor=$governors turbo=$turbo cstate_max_us=$deepest" \
-    "nohz_full=$(param nohz_full) isolcpus=$(param isolcpus) irqaffinity=$(param irqaffinity) irqs_on_isolated=$irqs"
+    "nohz_full=$(param nohz_full) isolcpus=$(param isolcpus) irqaffinity=$(param irqaffinity)" \
+    "isolated_cpus=$ISOLATED irqs_on_isolated=$irqs"
 }
 
 need_root() { [ "$(id -u)" = 0 ] || { echo "$1 needs root: sudo $0 $1" >&2; exit 1; }; }
