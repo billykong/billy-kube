@@ -40,6 +40,6 @@ esac
 
 echo "env date_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ) variant=$variant git_commit=$commit git_dirty=$dirty" \
   "host=$(q "$(hostname)") env_type=$env_type kernel=$(uname -r) node_kernel=$(q "$node_kernel")" \
-  "cpu_model=$(q "$cpu_model") cpus=$(nproc) smt=$smt governor=$governor turbo=$turbo" \
+  "cpu_model=$(q "$cpu_model") cpus=$(nproc --all) smt=$smt governor=$governor turbo=$turbo" \
   "host_hugepages_2m=$hugepages kind=$kind_version context=$(q "$context") k8s=$k8s cni=$cni" \
   "$host_tuning"
