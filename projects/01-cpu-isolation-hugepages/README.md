@@ -68,6 +68,17 @@ The check only uses `kubectl` (pod cpusets and the kubelet's `configz` endpoint)
 
 Also check by hand once per cluster: `kubectl run probe --image=busybox -- sleep 3600` lands on `worker`, never `worker2` (taint).
 
+### Host tuning stages (milestone 4)
+
+`scripts/host-tuning.sh` (`make host-status`, `host-tuning-runtime`, `host-tuning-boot` and matching `host-revert-*`) applies the host tuning in stages so each one is measured separately. Every result's `env` line records the stage (`host_tuning=none|runtime|runtime+boot`), the deepest enabled C-state, the boot isolation parameters and how many IRQs reach the isolated CPUs. `make summarise` gives each stage its own table.
+
+| Stage | Changes | Lasts | Revert |
+| --- | --- | --- | --- |
+| `runtime` | `performance` governor, turbo off, C-states with exit latency > 1 µs disabled | until reboot | `make host-revert-runtime` (restores the saved governor and turbo) |
+| `boot` | `isolcpus=domain,managed_irq,1,5 nohz_full=1,5 rcu_nocbs=1,5 irqaffinity=0,4`, via `/etc/default/grub.d/90-billy-kube-isolation.cfg` | until removed | `make host-revert-boot`, then reboot |
+
+SMT stays on: the tuned pod gets both threads of core 1, and the boot stage isolates both. After a reboot, run `make hugepages-on host-tuning-runtime` again, then `docker exec billy-kube-worker2 systemctl restart kubelet`.
+
 ### Tests
 
 `make lint` (shellcheck, kubeconform, gofmt, go vet) and `make test` (memlat Go tests, `bench/*_test.sh` against a stub `kubectl`, summariser tests) run without a cluster, and in CI on every pull request.
@@ -78,7 +89,8 @@ Also check by hand once per cluster: `kubectl run probe --image=busybox -- sleep
 - **Huge pages are a host resource.** Every kind node reports the same host huge page pool as capacity, so the kubelets can over-commit it between them.
 - **WSL2**: pinning is to vCPUs and Windows scheduling noise leaks in. Use WSL2 to validate the manifests; use bare-metal Linux for the numbers (see `billy-notes/kubernetes/wsl2-vs-bare-metal-for-learning-track.md`).
 - Bare-metal extras for the real runs: `performance` CPU governor, C-state limits, SMT and turbo off (or the `full-pcpus-only` CPU manager policy option), IRQs steered off the benchmark CPUs.
-- **C-states.** Without host tuning, an exclusive CPU with nothing else on it goes idle between cyclictest wake-ups and drops into deep C-states, so pinning can make the wake-up tail *worse* (see Results). cyclictest normally prevents this by holding `/dev/cpu_dma_latency` at 0, but the device isn't in the container (`WARN: stat /dev/cpu_dma_latency failed`).
+- **An idle exclusive CPU attracts host work.** The static CPU manager only keeps the latency node's *pods* off the tuned pod's CPUs. Between wake-ups that CPU is idle, so it drops into deep C-states and the host scheduler balances other work onto it: kind's control plane, containerd, desktop apps, device IRQs. Without host isolation, pinning made the wake-up tail *worse* (see Results). cyclictest would normally hold `/dev/cpu_dma_latency` at 0 against the C-states, but the device isn't in the container (`WARN: stat /dev/cpu_dma_latency failed`).
+- **Host isolation is tied to one core.** `scripts/host-tuning.sh` isolates CPUs 1,5 because the static CPU manager hands the tuned pod the lowest free core after the reserved `0,4`. A different CPU count, reserved set or request size needs `ISOLATED` changed to match. Shared-pool pods that land on an isolated CPU stay there, because `isolcpus=domain` stops load balancing onto and off it.
 - **The baseline runs on CPU 0**, the kubelet's reserved CPU: cyclictest pins to the first allowed CPU, and the shared pool includes the reserved set.
 - **Huge pages after a reboot.** The host reservation is not persistent. After a reboot, run `make hugepages-on`, then `docker exec billy-kube-worker2 systemctl restart kubelet` so the node reports them again.
 
@@ -102,8 +114,56 @@ Also check by hand once per cluster: `kubectl run probe --image=busybox -- sleep
 
 The cyclictest histogram goes to 20 ms (`HIST_MAX_US`), so none of these runs overflowed.
 
-Next (M4): the same runs with host tuning (performance governor, C-state limits, `isolcpus`/`nohz_full`/`irqaffinity`), to see whether pinning beats the baseline once the core can't sleep.
+### Milestone 4: host tuning stages
+
+2026-10-29/30, same laptop. The kubelet now reserves the whole core `0,4`. Each stage: 3 baseline + 3 tuned runs on a clean tree (`e115426` for `none` and `runtime`; `84afc9c` for `runtime+boot`, which only adds the boot stage and records all CPUs). Every run passed its tuning check. Median (min-max) from `make summarise`:
+
+**cyclictest (SCHED_OTHER), µs**
+
+| Stage | Variant | p50 | p99 | p99.9 | max |
+| --- | --- | --- | --- | --- | --- |
+| none | baseline | 58 | 66 (63-70) | 363 (349-2826) | 5228 (3843-7586) |
+| none | tuned | 56 | 218 (181-277) | 1690 (1488-2207) | 6822 (4163-6896) |
+| runtime | baseline | 59 | 66 (66-67) | 178 (92-891) | 4128 (4092-6019) |
+| runtime | tuned | 58 | 283 (270-300) | 1981 (1867-2042) | 6678 (5686-8543) |
+| runtime+boot | baseline | 59 | 70 (68-72) | 272 (246-446) | 4917 (3847-6030) |
+| runtime+boot | tuned | 59 | **72** | **76 (76-77)** | 3639 (3625-4177) |
+
+**memlat, tuned variant, ns**
+
+| Stage | Pages | p50 | p99 | p99.9 | max |
+| --- | --- | --- | --- | --- | --- |
+| none | 4 KiB | 151 | 206 | 416 | 25634 |
+| none | 2 MiB | 125 | 174 | 362 | 20726 |
+| runtime | 4 KiB | 170 | 248 | 504 | 14203 |
+| runtime | 2 MiB | 140 | 204 | 450 | 19787 |
+| runtime+boot | 4 KiB | 165 | 225 | 408 | **564** |
+| runtime+boot | 2 MiB | 140 | 204 | 360 | **487** |
+
+**What was on CPU 1 during a tuned run.** Counted over 40 s of one extra tuned Job (not saved as a result) from `/proc/interrupts`, `/proc/softirqs`, cpuidle counters and `ps -eLo psr` samples:
+
+| | `runtime` stage | `runtime+boot` stage |
+| --- | --- | --- |
+| C2/C3 entries | 0 | 0 |
+| Device IRQs | NVMe 2368, Wi-Fi 735 | 0 |
+| Function-call / reschedule IPIs, TLB shootdowns | 4745 / 4387 / 368 | 70 / 1 / 0 |
+| Scheduler / network-receive softirqs | 12647 / 3809 | 0 / 0 |
+| Other threads seen | containerd(-shim), kubelet, kube-apiserver, etcd, CoreDNS, kindnet, snapd, desktop and VPN daemons | only cyclictest and CPU 1's own kernel threads |
+
+- **Pinning only pays off with host isolation.** In the `none` and `runtime` stages, tuned p99 was 3-4× the baseline's. With the boot stage, tuned p99.9 is **76 µs against 272 µs** for the baseline (3.6× lower), with the narrowest spread of any group, and p99 is level with the baseline.
+- **Limiting C-states alone changed nothing.** The `runtime` stage removed every C2/C3 entry but left the tuned tail where it was. In M2 the deep C-states were the first symptom, not the whole cause: the idle core was also taking IRQs and host threads, which only the boot stage removed.
+- **Isolation also cleans up the memory tail.** memlat's max on the tuned core fell from about 20 µs to about 0.5 µs: nothing interrupts the pointer chase any more.
+- **Huge pages hold at every stage:** 2 MiB pages cut tuned memlat p50 by 15-18% against 4 KiB pages.
+- **Turbo off costs memory latency:** tuned 4 KiB memlat p50 went from 151 to 165-170 ns with the `runtime` stage, as expected from the lower clock.
+- **p50 is about 58 µs in every group.** That matches the kernel's default 50 µs timer slack for SCHED_OTHER tasks, so it is a floor of this benchmark mode, not of the CPU. A SCHED_FIFO run (`RT_PRIORITY=80`) would remove it.
+- **The tuned max is still about 3.6 ms.** A rare event remains on the isolated core; not yet explained.
 
 ## Takeaways
 
-TODO
+1. **The static CPU manager isolates pods from pods, not from the host.** On a shared kernel (kind, or any node with system daemons), an exclusive CPU that sits idle attracts host threads, IRQs and IPIs, and drops into deep C-states. Pinning alone made the tail worse.
+2. **Real isolation is a host job.** `isolcpus=domain,managed_irq` plus `irqaffinity` on the core the kubelet hands out, with `nohz_full`/`rcu_nocbs` and C-states limited, turned pinning into a 3.6× better p99.9 and a 40× lower memlat max. The kubelet's `reserved-cpus` should be the housekeeping core that gets the IRQs.
+3. **Measure what else ran on the CPU, not just the cpuset.** The tuning checks all passed in every stage. Only per-CPU interrupt, softirq, idle and thread counts showed why the "tuned" pod was slower.
+4. **Huge pages are a reliable 15-18%** for TLB-bound access, independent of the host tuning.
+5. **Taints and a node label kept general pods off the latency node** (the probe pod landed on `worker`).
+
+Open questions: the SCHED_FIFO numbers (timer slack), the remaining ms-scale max, the `boot` stage without `runtime`, and the `full-pcpus-only` and CFS-throttling variants (P01-26, P01-27).
