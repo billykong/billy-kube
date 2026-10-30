@@ -50,8 +50,8 @@ On a node shared with a noisy neighbour:
 | P01-20 | cyclictest wake-up latency on one allowed CPU, reported as p50/p99/p99.9/max in µs with sample and overflow counts. | Must | **Done**: `bench/bench.sh` smoke run, output in the P01 README |
 | P01-21 | memlat measures pointer-chase latency with 4 KiB pages (THP disabled) and with 2 MiB huge pages, reported as p50/p99/p99.9/max in ns. | Must | **Done**: `memlat` smoke run with both page sizes, output in the P01 README |
 | P01-22 | Each result shows the variant, node and the CPUs the pod was allowed to use. | Must | **Done**: `bench/bench.sh` header line |
-| P01-23 | Each variant is run 3 or more times on WSL2 (validation) and on bare metal (published numbers). | Must | **Partial**: 3 runs per variant on a bare-metal laptop without host tuning (M2 validation, replacing WSL2); host-tuned runs pending (M4) |
-| P01-24 | On bare metal, a further run adds host tuning: `isolcpus`/`nohz_full`/`irqaffinity` matching the kubelet's reserved CPUs, performance governor, SMT and turbo off. Documented with revert steps. | Must | Planned (M4) |
+| P01-23 | Each variant is run 3 or more times on WSL2 (validation) and on bare metal (published numbers). | Must | **Done**: 3 runs per variant on a bare-metal laptop for M2 validation (replacing WSL2) and for each M4 host tuning stage (`none`, `runtime`, `runtime+boot`) |
+| P01-24 | On bare metal, a further run adds host tuning: `isolcpus`/`nohz_full`/`irqaffinity` matching the kubelet's reserved CPUs, performance governor, SMT and turbo off. Documented with revert steps. | Must | **Done**: `scripts/host-tuning.sh` stages with revert steps in the P01 README. Turbo off; SMT kept on, with both threads of the bench core isolated instead |
 | P01-25 | A run fails if the tuned pod didn't get exclusive CPUs or huge pages (see LAB-15). | Should | **Done**: `bench/run.sh` + `bench/check-tuning.sh`; huge pages enforced by `memlat -hugepages` failing the Job; validated 2026-10-29 (M2, bare-metal laptop) |
 | P01-26 | The `full-pcpus-only` CPU manager policy option is compared on an SMT host. | Could | Planned |
 | P01-27 | CFS quota throttling is shown: a pod with a CPU limit but no pinning, under load, with `cpu.stat` throttling counts next to its latency (links to LF-21). | Could | Planned |
@@ -60,7 +60,7 @@ On a node shared with a noisy neighbour:
 
 | ID | Requirement | Priority | Status |
 | --- | --- | --- | --- |
-| P01-30 | The project README covers hypothesis, setup, method, results, caveats and takeaways. | Must | **Partial**: M2 validation results and caveats in; bare-metal tuned results and takeaways pending |
+| P01-30 | The project README covers hypothesis, setup, method, results, caveats and takeaways. | Must | **Done**: results and takeaways in the P01 README |
 | P01-31 | Caveats cover the shared kernel, the shared huge page pool and WSL2 vCPUs. | Must | **Done**: P01 README |
 | P01-32 | A blog post with the results table and the mechanism behind each effect. | Should | Planned |
 

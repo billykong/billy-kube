@@ -29,8 +29,8 @@ This track runs after the agentic-systems track's projects 1-4 (see billy-notes 
 1. **Done.** Tuned kind config, bench image (cyclictest, memlat, stress-ng), noise Deployment, baseline and tuned Jobs, runner and `make` targets. Entrypoint and memlat smoke-tested outside a cluster.
 2. **Done** (2026-10-29, on a bare-metal laptop instead of WSL2). Validate on a real cluster: cluster comes up, `make check-latency-node` shows the static policy, taint and allocatable huge pages; both variants complete; tuned pod gets exclusive CPUs and the noise pod's cpuset excludes them.
 3. **Done.** Harness hardening: environment record (LAB-13), tuning checks that discard bad runs (LAB-15), summariser (LAB-14), `make lint` / `make test` and CI, green from its first run (NFR-40, NFR-41). Cluster-dependent parts are tested against a stub `kubectl` until milestone 2.
-4. **Next.** Bare-metal runs: host tuning (`isolcpus`, `nohz_full`, `irqaffinity`, performance governor, C-state limits, SMT/turbo) documented with revert; 3+ runs per variant, with and without host tuning.
-5. Writeup: results table, takeaways, blog post.
+4. **Done** (2026-10-30). Bare-metal runs: host tuning (`isolcpus`, `nohz_full`, `irqaffinity`, performance governor, C-state limits, SMT/turbo) documented with revert; 3+ runs per variant, with and without host tuning.
+5. **Next.** Writeup: results table, takeaways, blog post. (Results table and takeaways are in the P01 README; blog post pending.)
 
 ### LF: Linux fundamentals
 1. CPU affinity: `taskset` pinned vs free-floating, under noise.

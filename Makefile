@@ -14,7 +14,8 @@ GO_MODULES := $(patsubst %/go.mod,%,$(shell find projects -name go.mod))
 
 .PHONY: cluster-up cluster-down cluster-up-tuned hugepages-on hugepages-off \
 	bench-image bench-load bench-baseline bench-tuned check-latency-node \
-	summarise lint test
+	summarise lint test host-status host-tuning-runtime host-revert-runtime \
+	host-tuning-boot host-revert-boot
 
 cluster-up:
 	kind create cluster --name $(CLUSTER) --config $(KIND_CONFIG)
@@ -31,6 +32,22 @@ hugepages-on:
 
 hugepages-off:
 	scripts/hugepages.sh off
+
+# Project 01 milestone 4: host tuning stages (see scripts/host-tuning.sh).
+host-status:
+	scripts/host-tuning.sh status
+
+host-tuning-runtime:
+	sudo scripts/host-tuning.sh apply-runtime
+
+host-revert-runtime:
+	sudo scripts/host-tuning.sh revert-runtime
+
+host-tuning-boot:
+	sudo scripts/host-tuning.sh apply-boot
+
+host-revert-boot:
+	sudo scripts/host-tuning.sh revert-boot
 
 bench-image:
 	docker build -t $(BENCH_IMAGE) $(P01)/bench
