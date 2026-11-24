@@ -37,7 +37,7 @@ These apply to every project and to the shared lab. A project file may tighten t
 
 | ID | Requirement | Priority | Status |
 | --- | --- | --- | --- |
-| NFR-30 | Every project runs on a laptop with 4 or more CPUs and 16 GB RAM. Projects needing more say so up front. | Must | **Partial**: P01 sized for 4 CPUs and 1 GiB of huge pages |
+| NFR-30 | Every project runs on a laptop with 4 or more CPUs and 16 GB RAM. Projects needing more say so up front. | Must | **Partial**: P01 sized for 4 CPUs and 1 GiB of huge pages; K1 grid about 2 GB with 216 KWOK nodes |
 | NFR-31 | A single benchmark run finishes within 15 minutes; a full project result set (all variants, 3 runs each) within 2 hours. | Should | **Partial**: P01 run is about 1.5 minutes by default |
 | NFR-32 | A cluster is created from scratch in under 5 minutes on the bare-metal host. | Should | Planned |
 

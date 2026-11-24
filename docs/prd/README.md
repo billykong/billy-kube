@@ -17,6 +17,7 @@ The high-level plan and its reasoning live in billy-notes ([low-latency-infra-le
 | [projects/p02-sriov-multus.md](projects/p02-sriov-multus.md) | P02: SR-IOV + Multus writeup |
 | [projects/p03-cilium-vs-default-cni.md](projects/p03-cilium-vs-default-cni.md) | P03: Cilium/eBPF vs default CNI latency |
 | [projects/p04-boundary-design-doc.md](projects/p04-boundary-design-doc.md) | P04: boundary design doc (Kubernetes vs bare metal / kernel bypass) |
+| [projects/k1-research-compute-grid.md](projects/k1-research-compute-grid.md) | K1: research compute grid (Kueue, KWOK; first "Kubernetes for trading firms" project) |
 
 Functional requirements are in [02-lab-architecture.md](02-lab-architecture.md) (shared lab) and in each project file. Non-functional requirements apply to every project and are in [03-non-functional-requirements.md](03-non-functional-requirements.md).
 
@@ -29,6 +30,7 @@ Functional requirements are in [02-lab-architecture.md](02-lab-architecture.md) 
 | P02 SR-IOV + Multus | Not started; waits on the NIC check |
 | P03 Cilium vs default CNI | Not started |
 | P04 Boundary design doc | Not started; needs evidence from P01 and P03 |
+| K1 Research compute grid | Milestone 1 (grid and queues) done 2026-11-24: `make k1-verify` 17/17. Next: milestone 2, priority and preemption |
 
 ## Conventions
 

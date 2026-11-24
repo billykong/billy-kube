@@ -17,7 +17,8 @@ That judgment is hard to learn from documentation alone, for three reasons:
 - a local cluster setup (kind, optionally k3s) with the plumbing visible;
 - small Linux performance experiments that explain the mechanisms;
 - four portfolio projects (P01-P04), each with a hypothesis, a reproducible method, recorded results and takeaways;
-- a design doc that turns the measurements into placement decisions for a toy trading-adjacent system.
+- a design doc that turns the measurements into placement decisions for a toy trading-adjacent system;
+- "Kubernetes for trading firms" projects (K1 onwards) for the work around the hot path: research compute, change control, clock monitoring, multi-cluster.
 
 It is the Kubernetes half of a hybrid hardware + infra skill set. The FPGA half lives in billy-notes (`fpga/learning-plan-and-projects.md`).
 
