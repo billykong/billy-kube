@@ -4,7 +4,7 @@
 Each result file holds "<record> key=value ..." lines: one "env" line (see
 scripts/env-record.sh), optional "node"/"check"/"bench" lines, and one line
 per measurement ("cyclictest ...", "memlat ..."). Runs are grouped by
-environment (env_type + host), variant, tool and mode; each cell shows the
+environment (env_type + host + host_tuning), variant, tool and mode; each cell shows the
 median across runs with the min-max spread.
 
 Environments are never mixed in one table, and WSL2 tables are labelled
@@ -84,11 +84,12 @@ def cell(values):
 
 
 def group(runs):
-    """{(env_type, host): {(variant, tool, mode): [kv, ...]}} plus env info."""
+    """{(env_type, host, host_tuning): {(variant, tool, mode): [kv, ...]}} plus env info."""
     envs, groups = {}, {}
     for run in runs:
         env = run["env"]
-        env_key = (env.get("env_type", "unknown"), env.get("host", "unknown"))
+        # Results from before host tuning was recorded have no host_tuning key.
+        env_key = (env.get("env_type", "unknown"), env.get("host", "unknown"), env.get("host_tuning", "unrecorded"))
         envs.setdefault(env_key, env)
         variant = env.get("variant") or run.get("bench", {}).get("variant", "unknown")
         for tool, kv in run["measurements"]:
@@ -101,14 +102,16 @@ def render(runs, min_runs=3):
     envs, groups = group(runs)
     out, flagged = [], False
     for env_key in sorted(groups):
-        env_type, host = env_key
+        env_type, host, host_tuning = env_key
         env = envs[env_key]
         title = "### %s: %s" % (env_type, host)
         if env_type == "wsl2":
             title += " (non-authoritative: WSL2 vCPUs)"
+        title += ", host tuning: %s" % host_tuning
         out.append(title)
         out.append("")
-        details = ["%s=%s" % (k, env[k]) for k in ("cpu_model", "kernel", "k8s", "cni", "smt", "governor", "turbo") if k in env]
+        details = ["%s=%s" % (k, env[k]) for k in ("cpu_model", "kernel", "k8s", "cni", "smt", "governor", "turbo",
+                                                    "cstate_max_us", "isolcpus", "nohz_full", "isolated_cpus", "irqs_on_isolated") if k in env]
         if details:
             out.append(", ".join(details))
             out.append("")

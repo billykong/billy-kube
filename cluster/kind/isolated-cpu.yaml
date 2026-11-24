@@ -1,9 +1,11 @@
 # Tuned cluster for project 01.
 #
 # - worker:  default kubelet (CPU manager "none"), takes general workloads.
-# - worker2: latency node. Static CPU manager with CPU 0 reserved for system/kube
-#            daemons, so Guaranteed pods with integer CPU requests get exclusive
-#            cores. Tainted so only pods that tolerate it land there.
+# - worker2: latency node. Static CPU manager with core 0 (CPUs 0 and 4, SMT
+#            siblings) reserved for system/kube daemons, so Guaranteed pods
+#            with integer CPU requests get exclusive cores. The reserved set
+#            matches HOUSEKEEPING in scripts/host-tuning.sh. Tainted so only
+#            pods that tolerate it land there.
 #
 # kind nodes share the host kernel, so huge pages must be reserved on the host
 # before creating the cluster (`make hugepages-on`); the kubelet reports them as
@@ -28,5 +30,5 @@ nodes:
               effect: NoSchedule
           kubeletExtraArgs:
             cpu-manager-policy: "static"
-            reserved-cpus: "0"
+            reserved-cpus: "0,4"
             topology-manager-policy: "best-effort"
