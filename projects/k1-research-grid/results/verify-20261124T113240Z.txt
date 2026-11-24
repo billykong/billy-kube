@@ -1,0 +1,19 @@
+env date_utc=2026-11-24T11:32:41Z variant=k1-m1-verify git_commit=c4e81a5 git_dirty=0 host=LAPTOP-6L0CUJUJ env_type=wsl2 kernel=5.15.167.4-microsoft-standard-WSL2 node_kernel=5.15.167.4-microsoft-standard-WSL2 cpu_model="AMD Ryzen 5 5600H with Radeon Graphics" cpus=8 smt=1 governor=unknown turbo=unknown host_hugepages_2m=0 kind=v0.33.0 context=kind-billy-kube-grid k8s=v1.37.0 cni=kindnet unknown
+check=kueue-ready result=pass image=registry.k8s.io/kueue/kueue:v0.20.7
+check=kwok-ready result=pass image=registry.k8s.io/kwok/kwok:v0.8.0
+check=kwok-nodes result=pass cpu_nodes=200/200 gpu_nodes=16/16
+check=no-daemonsets-on-fake-nodes result=pass pods=0
+check=queues-active result=pass clusterqueues=3/3 localqueues=3/3 cohort=research
+check=policy-rejects-unqueued-job result=pass
+check=policy-rejects-bare-pod result=pass
+check=policy-ignores-other-namespaces result=pass
+check=team-job-admitted result=pass team=equities flavor=sim-cpu
+check=team-job-admitted result=pass team=futures flavor=sim-cpu
+check=team-job-admitted result=pass team=options flavor=sim-cpu
+check=sim-run-time result=pass want=15s got=15s
+check=borrow-idle-quota result=pass requested_cpu=3200 nominal=2400 borrowed=800
+check=owner-uses-own-quota result=pass team=futures requested_cpu=1920 nominal=2000 borrowed=0
+check=borrowing-limit-holds result=pass requested_cpu=928 would_use=4128 limit=4000
+check=gpu-job-on-gpu-flavor result=pass nodes=grid-gpu-000,grid-gpu-001
+check=real-job-on-real-flavor result=pass node=billy-kube-grid-worker
+summary result=pass

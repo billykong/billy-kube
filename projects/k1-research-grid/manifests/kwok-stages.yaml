@@ -1,0 +1,48 @@
+# Applied after KWOK's stage-fast.yaml, replacing its pod-complete stage.
+# A simulated Job pod completes after the duration in its
+# pod-complete.stage.kwok.x-k8s.io/delay annotation (e.g. "90s"), default 1s.
+# Unlike KWOK's "general" stage there is no default jitter, so run times are
+# exactly what the trace says.
+apiVersion: kwok.x-k8s.io/v1alpha1
+kind: Stage
+metadata:
+  name: pod-complete
+spec:
+  resourceRef:
+    apiGroup: v1
+    kind: Pod
+  selector:
+    matchExpressions:
+      - key: .metadata.deletionTimestamp
+        operator: DoesNotExist
+      - key: .status.phase
+        operator: In
+        values:
+          - Running
+      - key: .metadata.ownerReferences.[].kind
+        operator: In
+        values:
+          - Job
+  delay:
+    durationMilliseconds: 1000
+    durationFrom:
+      expressionFrom: .metadata.annotations["pod-complete.stage.kwok.x-k8s.io/delay"]
+  next:
+    statusTemplate: |
+      {{ $now := Now }}
+      {{ $root := . }}
+      containerStatuses:
+      {{ range $index, $item := .spec.containers }}
+      - image: {{ $item.image | Quote }}
+        name: {{ $item.name | Quote }}
+        ready: false
+        restartCount: 0
+        started: false
+        state:
+          terminated:
+            exitCode: 0
+            finishedAt: {{ $now | Quote }}
+            reason: Completed
+            startedAt: {{ (index $root.status.containerStatuses $index).state.running.startedAt | Quote }}
+      {{ end }}
+      phase: Succeeded

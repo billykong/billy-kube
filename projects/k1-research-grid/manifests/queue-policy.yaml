@@ -1,0 +1,45 @@
+# Nothing in a team namespace bypasses the queues (K1-06):
+# - a Job must name a LocalQueue (kueue.x-k8s.io/queue-name label);
+# - a Pod may only be created by the Job controller, so bare pods,
+#   Deployments and other controllers can't run outside Kueue's quotas.
+# The policy applies to every user, cluster admins included.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: grid-queue-required
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    namespaceSelector:
+      matchLabels:
+        billy-kube/grid-team: "true"
+    resourceRules:
+      - apiGroups: ["batch"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["jobs"]
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE"]
+        resources: ["pods"]
+  validations:
+    - expression: >-
+        request.resource.resource != 'jobs' ||
+        (has(object.metadata.labels) &&
+         'kueue.x-k8s.io/queue-name' in object.metadata.labels &&
+         object.metadata.labels['kueue.x-k8s.io/queue-name'] != '')
+      message: Jobs in grid team namespaces must set the kueue.x-k8s.io/queue-name label.
+      reason: Forbidden
+    - expression: >-
+        request.resource.resource != 'pods' ||
+        request.userInfo.username == 'system:serviceaccount:kube-system:job-controller'
+      message: Pods in grid team namespaces must come from a queued Job.
+      reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: grid-queue-required
+spec:
+  policyName: grid-queue-required
+  validationActions: [Deny]

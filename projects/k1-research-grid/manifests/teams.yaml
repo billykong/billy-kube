@@ -1,0 +1,46 @@
+# Team namespaces. The grid-team label puts them under Kueue (see
+# kueue-config.yaml) and under the queue-name admission policy.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: equities
+  labels:
+    billy-kube/grid-team: "true"
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: LocalQueue
+metadata:
+  name: equities
+  namespace: equities
+spec:
+  clusterQueue: equities
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: futures
+  labels:
+    billy-kube/grid-team: "true"
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: LocalQueue
+metadata:
+  name: futures
+  namespace: futures
+spec:
+  clusterQueue: futures
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: options
+  labels:
+    billy-kube/grid-team: "true"
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: LocalQueue
+metadata:
+  name: options
+  namespace: options
+spec:
+  clusterQueue: options

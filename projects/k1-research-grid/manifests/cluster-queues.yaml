@@ -1,0 +1,131 @@
+# One ClusterQueue per team, all in the "research" cohort. Nominal quotas
+# split the default grid (200 CPU nodes = 6400 CPU; 16 GPU nodes = 128 GPUs).
+# Each team may borrow idle quota up to its borrowingLimit. Flavors are tried
+# in order: CPU-only jobs fit sim-cpu (no GPU quota) first; GPU jobs go to
+# sim-gpu; only pods selecting billy-kube/pool=grid-real fit the real flavor.
+# No preemption yet (M2).
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ClusterQueue
+metadata:
+  name: equities
+spec:
+  cohortName: research
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: equities
+  resourceGroups:
+    - coveredResources: [cpu, memory, nvidia.com/gpu]
+      flavors:
+        - name: sim-cpu
+          resources:
+            - name: cpu
+              nominalQuota: 2400
+              borrowingLimit: 1600
+            - name: memory
+              nominalQuota: 9600Gi
+              borrowingLimit: 6400Gi
+            - name: nvidia.com/gpu
+              nominalQuota: 0
+        - name: sim-gpu
+          resources:
+            - name: cpu
+              nominalQuota: 128
+              borrowingLimit: 256
+            - name: memory
+              nominalQuota: 1024Gi
+              borrowingLimit: 2048Gi
+            - name: nvidia.com/gpu
+              nominalQuota: 32
+              borrowingLimit: 32
+        - name: real
+          resources:
+            - name: cpu
+              nominalQuota: 1
+            - name: memory
+              nominalQuota: 2Gi
+            - name: nvidia.com/gpu
+              nominalQuota: 0
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ClusterQueue
+metadata:
+  name: futures
+spec:
+  cohortName: research
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: futures
+  resourceGroups:
+    - coveredResources: [cpu, memory, nvidia.com/gpu]
+      flavors:
+        - name: sim-cpu
+          resources:
+            - name: cpu
+              nominalQuota: 2000
+              borrowingLimit: 1600
+            - name: memory
+              nominalQuota: 8000Gi
+              borrowingLimit: 6400Gi
+            - name: nvidia.com/gpu
+              nominalQuota: 0
+        - name: sim-gpu
+          resources:
+            - name: cpu
+              nominalQuota: 128
+              borrowingLimit: 256
+            - name: memory
+              nominalQuota: 1024Gi
+              borrowingLimit: 2048Gi
+            - name: nvidia.com/gpu
+              nominalQuota: 32
+              borrowingLimit: 32
+        - name: real
+          resources:
+            - name: cpu
+              nominalQuota: 1
+            - name: memory
+              nominalQuota: 2Gi
+            - name: nvidia.com/gpu
+              nominalQuota: 0
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ClusterQueue
+metadata:
+  name: options
+spec:
+  cohortName: research
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: options
+  resourceGroups:
+    - coveredResources: [cpu, memory, nvidia.com/gpu]
+      flavors:
+        - name: sim-cpu
+          resources:
+            - name: cpu
+              nominalQuota: 2000
+              borrowingLimit: 1600
+            - name: memory
+              nominalQuota: 8000Gi
+              borrowingLimit: 6400Gi
+            - name: nvidia.com/gpu
+              nominalQuota: 0
+        - name: sim-gpu
+          resources:
+            - name: cpu
+              nominalQuota: 256
+              borrowingLimit: 256
+            - name: memory
+              nominalQuota: 2048Gi
+              borrowingLimit: 2048Gi
+            - name: nvidia.com/gpu
+              nominalQuota: 64
+              borrowingLimit: 32
+        - name: real
+          resources:
+            - name: cpu
+              nominalQuota: 1
+            - name: memory
+              nominalQuota: 2Gi
+            - name: nvidia.com/gpu
+              nominalQuota: 0

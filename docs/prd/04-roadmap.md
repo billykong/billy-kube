@@ -12,6 +12,8 @@ flowchart LR
   P02 -.-> P04
 ```
 
+The "Kubernetes for trading firms" projects (K1-K7, hardware-free) were added on 2026-11-18, while P03 and P02 wait for bare-metal time and a NIC. K1 is next after P01; see billy-notes `career/low-latency-trading-roadmap.md` for the K order.
+
 This track runs after the agentic-systems track's projects 1-4 (see billy-notes `kubernetes/agentic-systems-learning-track.md`). Within this track, the order is **P01 → P03 → P02 → P04**, with LF experiments done alongside P01 when they explain a P01 result.
 
 | Phase | Scope | Exit criteria |
@@ -21,6 +23,7 @@ This track runs after the agentic-systems track's projects 1-4 (see billy-notes 
 | 2 | P03 | Default CNI vs Cilium eBPF compared on bare metal, same-node and cross-node, with datapath checks |
 | 3 | P02 | NIC checked; working Multus secondary interface on kind; SR-IOV writeup (real or mocked) |
 | 4 | P04 | Design doc citing P01 and P03 results |
+| K1 | Research compute grid | All K1 **Must** requirements done; per-configuration results from the same trace in `results/`; README and blog post |
 | 5 | Publication | Blog posts per project; reusable notes in billy-notes |
 
 ## Milestones
@@ -31,6 +34,14 @@ This track runs after the agentic-systems track's projects 1-4 (see billy-notes 
 3. **Done.** Harness hardening: environment record (LAB-13), tuning checks that discard bad runs (LAB-15), summariser (LAB-14), `make lint` / `make test` and CI, green from its first run (NFR-40, NFR-41). Cluster-dependent parts are tested against a stub `kubectl` until milestone 2.
 4. **Done** (2026-10-30). Bare-metal runs: host tuning (`isolcpus`, `nohz_full`, `irqaffinity`, performance governor, C-state limits, SMT/turbo) documented with revert; 3+ runs per variant, with and without host tuning.
 5. **Done** (2026-10-30). Writeup: results table and takeaways in the P01 README; blog post "What CPU pinning and huge pages buy you on Kubernetes, measured" at https://billykong.github.io/cpu-pinning/.
+
+### K1: Research compute grid
+1. **Done** (2026-11-24, WSL2). Grid and queues: kind + pinned Kueue + KWOK grid; three team ClusterQueues in a cohort with borrowing; queue-name admission policy; `make k1-verify`.
+2. **Next.** Priority and preemption: priority classes, reclaim of lent quota, urgent preemption within a team, preempted work recorded.
+3. Fair sharing (weighted, and usage-decay admission) and all-or-nothing admission for multi-worker jobs, with the default-scheduler deadlock shown.
+4. Load generator and measurement: seeded trace, five configurations, 3+ seeds each, summariser.
+5. Real workload: ITCH parameter-sweep backtest on the real worker.
+6. Writeup: results, takeaways, blog post.
 
 ### LF: Linux fundamentals
 1. CPU affinity: `taskset` pinned vs free-floating, under noise.
@@ -61,6 +72,7 @@ This track runs after the agentic-systems track's projects 1-4 (see billy-notes 
 | --- | --- |
 | Public repo with READMEs, configs, harness and results | Continuous |
 | Blog post: "What CPU pinning and huge pages buy you on Kubernetes, measured" | End of phase 1 |
+| Blog post: "Sharing a research grid without the loudest team winning, measured" | End of K1 |
 | Blog post: "Cilium eBPF vs the default CNI: pod-to-pod latency, measured" | End of phase 2 |
 | Writeup: "SR-IOV and Multus without the hardware" | End of phase 3 |
 | Design doc and post: "Where Kubernetes stops: placing a trading-adjacent system" | End of phase 4 |
